@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IA a Nufri</title>
+<meta name="description" content="Projecte DASP (RA1 + RA2): pla de digitalització amb intel·ligència artificial per a Nufri. Mauri, Arnau, JoseMa i Abel, CFGS DAW.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2316301f'/%3E%3Cpath d='M50 34c-5-5-22-7-25 10-2 13 7 33 17 35 4 1 6-2 8-2s4 3 8 2c10-2 19-22 17-35-3-17-20-15-25-10z' fill='%23c8e66a'/%3E%3C/svg%3E">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0f2117; --card:#183324; --card2:#1f3f2d; --line:rgba(255,255,255,.12);
+  --ink:#f2f5ec; --muted:#bccbb5; --dim:#8fa388;
+  --lime:#c8e66a; --red:#ef6b55; --soft:rgba(200,230,106,.12);
+  --radius:16px; --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+a{color:var(--lime)}
+
+/* fons */
+.bg-glow{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.bg-glow i{position:absolute;border-radius:50%;filter:blur(90px);transition:transform 1.2s var(--ease)}
+.bg-glow i:nth-child(1){width:50vmax;height:50vmax;background:#2c5a37;top:-22vmax;right:-14vmax;opacity:.55}
+.bg-glow i:nth-child(2){width:40vmax;height:40vmax;background:#5d6f1f;bottom:-24vmax;left:-14vmax;opacity:.3}
+#net{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+
+/* diapositives */
+.deck{position:fixed;inset:0;z-index:1}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:84px max(5vw,20px) 100px;overflow-y:auto;
+  opacity:0;visibility:hidden;transform:translateX(50px);transition:opacity .55s var(--ease),transform .55s var(--ease),visibility 0s .55s}
+.slide.prev{transform:translateX(-50px)}
+.slide.active{opacity:1;visibility:visible;transform:none;transition:opacity .55s var(--ease),transform .55s var(--ease),visibility 0s}
+.inner{width:100%;max-width:1120px;margin:auto}
+.rv{opacity:0;transform:translateY(18px);transition:opacity .6s var(--ease),transform .6s var(--ease);transition-delay:calc(var(--i,0)*80ms + 120ms)}
+.slide.active .rv{opacity:1;transform:none}
+
+.kicker{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--lime);margin-bottom:10px}
+h1{font-size:clamp(32px,5vw,62px);line-height:1.06;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+h2{font-size:clamp(26px,3.3vw,42px);line-height:1.12;font-weight:800;letter-spacing:-.01em;margin-bottom:12px;text-wrap:balance}
+h3{font-size:18px;font-weight:700;margin-bottom:6px}
+.lead{font-size:clamp(16px,1.5vw,19px);color:var(--muted);line-height:1.55;max-width:780px}
+.small{font-size:14px;color:var(--dim);line-height:1.5}
+.w{color:#fff}
+.mt{margin-top:24px} .mt2{margin-top:14px}
+p{line-height:1.55}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;transition:transform .3s var(--ease),border-color .3s}
+.card.hov:hover{transform:translateY(-4px);border-color:rgba(200,230,106,.5)}
+.card p{color:var(--muted);font-size:15px}
+.ico{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:var(--soft);margin-bottom:12px;flex:0 0 auto}
+.ico svg{width:23px;height:23px;stroke:var(--lime);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tag{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700;background:var(--soft);color:var(--lime)}
+.tag.r{background:rgba(239,107,85,.15);color:var(--red)}
+ul.plain{list-style:none;display:grid;gap:9px;color:var(--muted);font-size:15.5px}
+ul.plain li{padding-left:18px;position:relative;line-height:1.45}
+ul.plain li::before{content:"";position:absolute;left:0;top:.6em;width:7px;height:7px;border-radius:50%;background:var(--lime)}
+
+/* barres */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:16px max(5vw,20px);padding-top:calc(16px + env(safe-area-inset-top,0px));pointer-events:none}
+.brand{display:flex;gap:10px;align-items:center;font-weight:600;font-size:14px;color:var(--muted);pointer-events:auto}
+.brand svg{width:26px;height:26px}
+.tools{display:flex;gap:8px;pointer-events:auto}
+.tbtn{height:38px;min-width:38px;padding:0 12px;border-radius:11px;background:rgba(255,255,255,.07);border:1px solid var(--line);display:flex;gap:7px;align-items:center;font-size:13px;font-weight:600;color:var(--muted);transition:.2s}
+.tbtn:hover{background:rgba(255,255,255,.14);color:#fff}
+.tbtn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.bottombar{position:fixed;bottom:0;left:0;right:0;z-index:20;padding:0 max(5vw,20px) calc(18px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:14px}
+.navb{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid var(--line);display:grid;place-items:center;transition:.2s;flex:0 0 auto}
+.navb:hover{background:var(--lime)} .navb:hover svg{stroke:#16301f}
+.navb svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.progress{flex:1;height:5px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;cursor:pointer}
+.progress i{display:block;height:100%;width:0;background:var(--lime);border-radius:99px;transition:width .5s var(--ease)}
+.count{font-variant-numeric:tabular-nums;font-size:13px;color:var(--dim);min-width:52px;text-align:center;font-weight:600}
+.secname{font-size:13px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:26vw}
+
+/* índex general */
+#overview{position:fixed;inset:0;z-index:40;background:rgba(9,20,13,.95);backdrop-filter:blur(8px);padding:80px max(5vw,20px) 40px;overflow-y:auto;opacity:0;visibility:hidden;transition:.3s}
+#overview.on{opacity:1;visibility:visible}
+.ov-head{max-width:1120px;margin:0 auto 18px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.ov-head h2{font-size:26px;margin:0}
+.keys{display:flex;gap:14px;flex-wrap:wrap;color:var(--dim);font-size:13px}
+kbd{background:rgba(255,255,255,.1);border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-family:inherit;font-size:12px;color:#fff}
+.ov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;max-width:1120px;margin:0 auto}
+.ov-item{text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px;transition:.2s}
+.ov-item:hover,.ov-item.cur{border-color:var(--lime)}
+.ov-item small{color:var(--lime);font-weight:700;font-size:11px}
+.ov-item div{font-weight:600;margin-top:3px;font-size:14.5px}
+
+/* portada */
+.members{display:flex;gap:10px;flex-wrap:wrap;margin-top:30px}
+.member{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:99px;padding:8px 16px;font-weight:600}
+.start{margin-top:30px;display:inline-flex;gap:10px;align-items:center;background:var(--lime);color:#16301f;font-weight:800;padding:13px 22px;border-radius:12px;transition:.2s}
+.start:hover{transform:translateY(-2px)}
+.start svg{width:18px;height:18px;stroke:#16301f;fill:none;stroke-width:2.5}
+.cover-wrap{display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center}
+.apple{width:min(260px,28vw)}
+.apple .ring{animation:float 6s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-8px)}}
+
+/* índex */
+.toc{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.toc button{text-align:left;padding:18px 20px;border-radius:var(--radius);background:var(--card);border:1px solid var(--line);transition:.25s var(--ease);display:flex;gap:16px;align-items:center}
+.toc button:hover{border-color:var(--lime);transform:translateX(4px)}
+.toc .n{font-size:15px;font-weight:800;color:#16301f;background:var(--lime);border-radius:10px;min-width:44px;height:44px;display:grid;place-items:center}
+.toc b{display:block;font-size:17px}
+.toc span{color:var(--dim);font-size:14px}
+
+/* xifres */
+.stat .num{font-size:clamp(30px,3.6vw,46px);font-weight:800;color:var(--lime);line-height:1;font-variant-numeric:tabular-nums}
+.stat .lbl{color:var(--muted);font-size:14px;margin-top:6px}
+
+/* sectors */
+.sectors{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:12px;align-items:stretch}
+.arrow{display:grid;place-items:center;color:var(--lime);font-size:24px;font-weight:800}
+
+/* nivells */
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.level{border-radius:var(--radius);padding:22px;border:1px solid var(--line);background:var(--card)}
+.level.mid{background:var(--lime);color:#16301f;border-color:var(--lime)}
+.level.mid p,.level.mid em{color:#2a4a2f}
+.level p{color:var(--muted);font-size:15px;margin-top:6px}
+.level em{display:block;margin-top:12px;font-size:14px;color:var(--dim)}
+
+/* IT vs OT */
+.seg{display:inline-flex;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-bottom:14px;flex-wrap:wrap}
+.seg button{padding:8px 14px;border-radius:9px;font-weight:600;font-size:14px;color:var(--muted);transition:.2s}
+.seg button.on{background:var(--lime);color:#16301f}
+.tbl-wrap{overflow-x:auto}
+.cmp{width:100%;border-collapse:separate;border-spacing:0 7px;min-width:600px}
+.cmp th{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;text-align:left;padding:0 14px;color:var(--dim)}
+.cmp td{background:var(--card);padding:12px 14px;font-size:15px;transition:.3s var(--ease);border-top:1px solid var(--line);border-bottom:1px solid var(--line);vertical-align:top}
+.cmp td:first-child{border-left:1px solid var(--line);border-radius:10px 0 0 10px;font-weight:700;color:var(--lime);width:19%}
+.cmp td:last-child{border-right:1px solid var(--line);border-radius:0 10px 10px 0}
+.cmp td small{display:block;color:var(--dim);font-size:13px;margin-top:3px}
+.cmp.show-it .ot,.cmp.show-ot .it{opacity:.15}
+
+/* flux */
+.flow{display:flex;align-items:center;margin:6px 0 18px}
+.node{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:9px;width:116px}
+.node .bubble{width:74px;height:74px;border-radius:50%;background:var(--card2);border:2px solid var(--line);display:grid;place-items:center;transition:.25s var(--ease)}
+.node .bubble svg{width:30px;height:30px;stroke:var(--lime);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.node b{font-size:14px;text-align:center}
+.node.on .bubble,.node:hover .bubble{border-color:var(--lime);transform:scale(1.08)}
+.node.ia .bubble{background:var(--lime)} .node.ia .bubble svg{stroke:#16301f}
+.wire{flex:1;height:3px;background:rgba(255,255,255,.12);position:relative;overflow:hidden;border-radius:9px;margin-bottom:28px}
+.wire::after{content:"";position:absolute;top:0;left:-30%;width:30%;height:100%;background:linear-gradient(90deg,transparent,var(--lime),transparent);animation:data 1.8s linear infinite}
+@keyframes data{to{left:100%}}
+.info{min-height:64px;background:var(--soft);border:1px solid rgba(200,230,106,.3);border-radius:12px;padding:14px 18px;color:#eef6d6;font-size:15.5px;line-height:1.5}
+
+/* pestanyes */
+.tabs{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:11px 18px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-weight:700;transition:.2s}
+.tab.on{background:var(--lime);color:#16301f;border-color:var(--lime)}
+.panel{display:none;animation:fadeUp .4s var(--ease)}
+.panel.on{display:grid}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* THD */
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.chip{padding:9px 15px;border-radius:99px;background:rgba(255,255,255,.06);border:1px solid var(--line);font-weight:600;font-size:14.5px;transition:.2s}
+.chip:hover{border-color:var(--lime)}
+.chip.on{background:#fff;color:#16301f;border-color:#fff}
+.chip.ia{border-color:var(--lime);color:var(--lime)}
+.chip.ia.on{background:var(--lime);color:#16301f}
+.thd-desc{margin-top:18px;min-height:110px}
+
+/* fases */
+.timeline{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:8px 0 20px}
+.timeline::before{content:"";position:absolute;top:29px;left:12.5%;right:12.5%;height:3px;background:rgba(255,255,255,.1);border-radius:9px}
+.tl-fill{position:absolute;top:29px;left:12.5%;height:3px;background:var(--lime);border-radius:9px;transition:width .5s var(--ease);width:0}
+.phase{display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;z-index:1}
+.phase .c{width:58px;height:58px;border-radius:50%;background:var(--card2);border:3px solid var(--bg);display:grid;place-items:center;font-weight:800;font-size:19px;transition:.3s var(--ease)}
+.phase.done .c{background:#3c6b46}
+.phase.on .c{background:var(--lime);color:#16301f;transform:scale(1.12)}
+.phase b{font-size:15px;text-align:center}
+.phase small{color:var(--lime);font-weight:700;font-size:12.5px}
+
+/* abans / després */
+.switch{display:inline-flex;align-items:center;gap:12px;font-weight:600;margin-bottom:14px;color:var(--muted);font-size:15px}
+.sw{width:54px;height:30px;border-radius:99px;background:rgba(255,255,255,.14);position:relative;transition:.3s;flex:0 0 auto}
+.sw::after{content:"";position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.3s var(--ease)}
+.switch.on .sw{background:var(--lime)} .switch.on .sw::after{left:28px}
+.ba{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.flip{perspective:900px;height:122px;text-align:left;display:block;width:100%}
+.flip .in{display:block;position:relative;width:100%;height:100%;transition:transform .65s var(--ease);transform-style:preserve-3d}
+.flip.on .in{transform:rotateY(180deg)}
+.flip .f,.flip .b{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;padding:16px;display:flex;flex-direction:column;justify-content:center}
+.flip .f{background:rgba(239,107,85,.09);border:1px solid rgba(239,107,85,.35)}
+.flip .b{background:#1d3a26;border:1px solid rgba(200,230,106,.45);transform:rotateY(180deg)}
+.flip small{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.flip .f small{color:var(--red)} .flip .b small{color:var(--lime)}
+.flip strong{font-size:16.5px;margin-top:5px;line-height:1.3}
+.flip .b span{color:var(--muted);font-size:13.5px;margin-top:4px}
+
+/* connexió */
+.arch{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.arch .card{padding:14px;text-align:center;position:relative}
+.arch .card b{display:block;font-size:15px;margin-bottom:3px}
+.arch .card span{font-size:13px;color:var(--muted)}
+.arch .card:not(:last-child)::after{content:"→";position:absolute;right:-12px;top:50%;transform:translateY(-50%);color:var(--lime);font-weight:800;z-index:2}
+
+/* taula THD */
+.search{width:100%;max-width:360px;padding:11px 14px 11px 40px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.06) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%238fa388' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") 13px center no-repeat;color:#fff;font:inherit;font-size:15px;outline:none;margin-bottom:12px}
+.search:focus{border-color:var(--lime)}
+.tbl{width:100%;border-collapse:collapse;font-size:14.5px;min-width:560px}
+.tbl th{text-align:left;padding:9px 12px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--line)}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--line);color:var(--muted)}
+.tbl td:first-child{color:#fff;font-weight:700}
+.tbl tr.ia td{background:var(--soft)} .tbl tr.ia td:first-child{color:var(--lime)}
+.tbl tr.hide{display:none}
+.empty{display:none;color:var(--dim);font-size:14px;padding:10px 12px}
+
+/* pòster */
+.poster-wrap{display:grid;grid-template-columns:minmax(240px,380px) 1fr;gap:40px;align-items:center}
+.poster-img{border-radius:12px;overflow:hidden;box-shadow:0 26px 60px -24px rgba(0,0,0,.8);cursor:zoom-in;transition:transform .35s var(--ease);border:1px solid var(--line);padding:0;display:block;width:100%}
+.poster-img:hover{transform:rotate(-1deg) scale(1.02)}
+.poster-img img{display:block;width:100%}
+.btn{display:inline-flex;gap:9px;align-items:center;padding:12px 17px;border-radius:11px;background:rgba(255,255,255,.08);border:1px solid var(--line);font-weight:600;font-size:14.5px;text-decoration:none;color:#fff;transition:.2s}
+.btn:hover{border-color:var(--lime)}
+.btn.pri{background:var(--lime);color:#16301f;border-color:var(--lime)}
+.btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+#lightbox{position:fixed;inset:0;z-index:60;background:rgba(6,14,9,.95);display:grid;place-items:center;padding:20px;opacity:0;visibility:hidden;transition:.3s;cursor:zoom-out}
+#lightbox.on{opacity:1;visibility:visible}
+#lightbox img{max-height:94vh;max-width:94vw;border-radius:8px}
+
+/* pitch */
+.pitch{display:grid;grid-template-columns:210px 1fr;gap:36px;align-items:center}
+.ringbox{position:relative;width:190px;height:190px;margin:0 auto}
+.ringbox svg{transform:rotate(-90deg)}
+.ringbox circle{fill:none;stroke-width:10}
+.ringbox .bgc{stroke:rgba(255,255,255,.08)}
+.ringbox .fg{stroke:var(--lime);stroke-linecap:round;transition:stroke-dashoffset 1s linear}
+.ringbox .lbl{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.ringbox .lbl b{font-size:44px;font-weight:800;display:block;line-height:1;font-variant-numeric:tabular-nums}
+.ringbox .lbl small{color:var(--dim);font-size:12.5px}
+.pitch-text p{font-size:clamp(15px,1.4vw,18px);line-height:1.6;color:var(--muted);padding:7px 13px;border-radius:10px;transition:.4s var(--ease);margin-bottom:3px}
+.pitch-text.run p{color:var(--dim)}
+.pitch-text.run p.on{color:#fff;background:var(--soft)}
+
+/* fonts */
+.src a{display:block;padding:12px 15px;border-radius:11px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:#fff;font-size:14.5px;transition:.2s;margin-bottom:8px}
+.src a:hover{border-color:var(--lime)}
+.src a small{display:block;color:var(--dim);font-size:12.5px;margin-top:2px}
+
+@media (max-width:900px){
+  .g3,.g4,.levels,.ba,.arch{grid-template-columns:1fr 1fr}
+  .g2,.poster-wrap,.pitch,.toc,.cover-wrap{grid-template-columns:1fr}
+  .apple{display:none}
+  .sectors{grid-template-columns:1fr}
+  .sectors .arrow{transform:rotate(90deg)}
+  .flow{flex-wrap:wrap;justify-content:center;gap:10px}
+  .wire{display:none}
+  .node{width:92px}
+  .phase b{font-size:12.5px}
+  .arch .card::after{display:none}
+  .secname,.brand .txt,.tbtn .lab{display:none}
+  .topbar{background:linear-gradient(var(--bg) 60%,transparent);padding-bottom:20px}
+  .bottombar{background:linear-gradient(transparent,var(--bg) 40%);padding-top:24px}
+  .slide{padding-bottom:110px;padding-top:76px}
+}
+@media (max-width:560px){
+  .g3,.g4,.levels,.ba,.arch{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<div class="bg-glow"><i></i><i></i></div>
+<canvas id="net"></canvas>
+
+<header class="topbar">
+  <div class="brand"><svg viewBox="0 0 100 100"><path d="M50 30c-6-6-26-8-30 12-3 16 8 40 20 42 5 1 7-2 10-2s5 3 10 2c12-2 23-26 20-42-4-20-24-18-30-12z" fill="#c8e66a"/><path d="M50 30c0-8 4-14 10-17" stroke="#c8e66a" stroke-width="5" stroke-linecap="round" fill="none"/></svg><span class="txt">IA a Nufri · Projecte DASP</span></div>
+  <div class="tools">
+    <button class="tbtn" id="btnOv" title="Totes les diapositives (O)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="lab">Índex</span></button>
+    <button class="tbtn" id="btnFs" title="Pantalla completa (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="lab">Pantalla completa</span></button>
+  </div>
+</header>
+
+<main class="deck" id="deck">
+
+<!-- PORTADA -->
+<section class="slide" data-title="Portada">
+  <div class="inner cover-wrap">
+    <div>
+      <div class="kicker rv">Projecte DASP · RA1 + RA2 · CFGS DAW</div>
+      <h1 class="rv" style="--i:1">Pla d'implantació de digitalització d'extrem a extrem</h1>
+      <p class="lead rv mt2" style="--i:2">THD triada: <b class="w">intel·ligència artificial</b>. Empresa: <b class="w">Nufri</b>, de Mollerussa (Lleida).</p>
+      <div class="members rv" style="--i:3"><div class="member">Mauri</div><div class="member">Arnau</div><div class="member">JoseMa</div><div class="member">Abel</div></div>
+      <button class="start rv" style="--i:4" data-go="1">Començar <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      <p class="small rv mt" style="--i:5">Es pot avançar amb les fletxes del teclat, amb els botons de baix o lliscant al mòbil.</p>
+    </div>
+    <svg class="apple rv" style="--i:3" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+      <g class="ring">
+        <path d="M50 30c-6-6-26-8-30 12-3 16 8 40 20 42 5 1 7-2 10-2s5 3 10 2c12-2 23-26 20-42-4-20-24-18-30-12z" stroke="#c8e66a" stroke-width="2.2"/>
+        <path d="M50 30c0-8 4-14 10-17" stroke="#c8e66a" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M55 20c6-6 14-6 18-3-4 5-12 7-18 3z" fill="#c8e66a"/>
+        <path d="M36 48L50 56L64 46M50 56L42 70M50 56L60 68" stroke="#fff" stroke-width="1" opacity=".6"/>
+        <g fill="#fff"><circle cx="36" cy="48" r="2.4"/><circle cx="50" cy="56" r="3"/><circle cx="64" cy="46" r="2.4"/><circle cx="42" cy="70" r="2.4"/><circle cx="60" cy="68" r="2.4"/></g>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<!-- ÍNDEX -->
+<section class="slide" data-title="Índex">
+  <div class="inner">
+    <div class="kicker rv">Índex</div>
+    <h2 class="rv" style="--i:1">Parts del treball</h2>
+    <div class="toc mt2">
+      <button class="rv" style="--i:2" data-goto="nufri"><span class="n">0</span><div><b>L'empresa</b><span>Per què hem triat Nufri</span></div></button>
+      <button class="rv" style="--i:3" data-goto="ra1"><span class="n">1</span><div><b>Digitalització i IT/OT</b><span>RA1</span></div></button>
+      <button class="rv" style="--i:4" data-goto="ra2"><span class="n">2</span><div><b>La intel·ligència artificial</b><span>RA2</span></div></button>
+      <button class="rv" style="--i:5" data-goto="poster"><span class="n">3</span><div><b>Pòster i elevator pitch</b><span>La part per vendre la idea</span></div></button>
+    </div>
+  </div>
+</section>
+
+<!-- EMPRESA -->
+<section class="slide" data-title="L'empresa" id="nufri">
+  <div class="inner">
+    <div class="kicker rv">Introducció</div>
+    <h2 class="rv" style="--i:1">L'empresa: Nufri</h2>
+    <p class="lead rv" style="--i:2">Empresa de fruita de Mollerussa. L'hem triat perquè treballa en els tres sectors a la vegada.</p>
+    <div class="sectors mt">
+      <div class="card hov rv" style="--i:3"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 22V12"/><path d="M12 12c0-4 3-7 7-7 0 4-3 7-7 7z"/><path d="M12 15c0-3-2.5-5.5-6-5.5 0 3 2.5 5.5 6 5.5z"/></svg></div><span class="tag">Primari</span><h3 class="mt2">Camp</h3><p>Cultiva fruita a les seves finques de Lleida i Sòria.</p></div>
+      <div class="arrow rv" style="--i:4">→</div>
+      <div class="card hov rv" style="--i:5"><div class="ico"><svg viewBox="0 0 24 24"><path d="M2 20h20V9l-6 4V9l-6 4V5H2z"/></svg></div><span class="tag">Secundari</span><h3 class="mt2">Planta</h3><p>Classifica la fruita, la guarda en cambres de fred i en fa sucs.</p></div>
+      <div class="arrow rv" style="--i:6">→</div>
+      <div class="card hov rv" style="--i:7"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18"/></svg></div><span class="tag">Terciari</span><h3 class="mt2">Venda</h3><p>La distribueix a supermercats d'Espanya i Portugal.</p></div>
+    </div>
+    <div class="grid g3 mt">
+      <div class="stat rv" style="--i:8"><div class="num" data-count="1973" data-from="1900">1973</div><div class="lbl">Any que la van fundar pagesos del Pla d'Urgell</div></div>
+      <div class="stat rv" style="--i:9"><div class="num"><span data-count="293">293</span> M€</div><div class="lbl">Facturació el 2025</div></div>
+      <div class="stat rv" style="--i:10"><div class="num"><span data-count="194">194</span></div><div class="lbl">Treballadors, de mitjana</div></div>
+    </div>
+    <p class="small rv mt" style="--i:11">Tot el que proposem és idea nostra. No coneixem com són per dins els sistemes de l'empresa.</p>
+  </div>
+</section>
+
+<!-- 1.1 -->
+<section class="slide" data-title="1.1 Digitalització" id="ra1">
+  <div class="inner">
+    <div class="kicker rv">1.1 · RA1</div>
+    <h2 class="rv" style="--i:1">Què és la digitalització empresarial</h2>
+    <p class="lead rv" style="--i:2">Fer servir eines digitals (programes, sensors, Internet) perquè la informació de l'empresa estigui en sistemes on es pugui consultar i aprofitar, i no en papers o en el cap de les persones.</p>
+    <div class="levels mt">
+      <div class="level rv" style="--i:3"><h3>Digititzar</h3><p>Passar una cosa de paper a format digital.</p><em>Ex.: escanejar un albarà.</em></div>
+      <div class="level mid rv" style="--i:4"><h3>Digitalitzar</h3><p>Fer que aquesta informació serveixi per treballar millor.</p><em>Ex.: l'albarà entra sol al programa de comptabilitat.</em></div>
+      <div class="level rv" style="--i:5"><h3>Transformació digital</h3><p>Quan la tecnologia canvia què ven l'empresa o com ho ven.</p><em>Ex.: començar a vendre per Internet.</em></div>
+    </div>
+  </div>
+</section>
+
+<!-- 1.2 -->
+<section class="slide" data-title="1.2 IT i OT">
+  <div class="inner">
+    <div class="kicker rv">1.2 · RA1</div>
+    <h2 class="rv" style="--i:1">IT i OT: comparació</h2>
+    <p class="lead rv" style="--i:2"><b class="w">IT</b> (tecnologies de la informació) és la tecnologia de l'oficina. <b class="w">OT</b> (tecnologia d'operacions) és la que fa funcionar les màquines.</p>
+    <div class="seg rv mt2" style="--i:3" id="itot">
+      <button class="on" data-v="">Les dues</button><button data-v="show-it">Només IT</button><button data-v="show-ot">Només OT</button>
+    </div>
+    <div class="tbl-wrap rv" style="--i:4">
+      <table class="cmp" id="cmp">
+        <thead><tr><th></th><th>IT (gestió)</th><th>OT (operacions)</th></tr></thead>
+        <tbody>
+          <tr><td>Per a què serveix</td><td class="it">Gestionar clients, comandes i factures</td><td class="ot">Fer funcionar i vigilar les màquines</td></tr>
+          <tr><td>Exemples</td><td class="it">ERP, CRM, correu, web<small>ERP: programa de compres, vendes i factures. CRM: programa de clients.</small></td><td class="ot">PLC, sensors, cambres de fred<small>PLC: petit ordinador que controla una màquina.</small></td></tr>
+          <tr><td>El més important</td><td class="it">Que les dades no es perdin</td><td class="ot">Que la màquina no s'aturi</td></tr>
+          <tr><td>Temps de resposta</td><td class="it">Uns segons</td><td class="ot">A l'instant (mil·lisegons)</td></tr>
+          <tr><td>Durada dels equips</td><td class="it">3-5 anys</td><td class="ot">15-25 anys</td></tr>
+          <tr><td>Departaments</td><td class="it">Administració, comercial, RRHH, informàtica</td><td class="ot">Producció, manteniment, qualitat, camp</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small rv mt2" style="--i:5"><b class="w">Similituds:</b> totes dues fan servir ordinadors, xarxes i programes, generen dades i poden patir ciberatacs.</p>
+  </div>
+</section>
+
+<!-- 1.3 -->
+<section class="slide" data-title="1.3 Extrem a extrem">
+  <div class="inner">
+    <div class="kicker rv">1.3 · RA1</div>
+    <h2 class="rv" style="--i:1">Per què connectar IT i OT d'extrem a extrem</h2>
+    <p class="lead rv" style="--i:2">Que la informació vagi del camp fins al client sense talls. Si es clica cada punt surt què hi passa.</p>
+    <div class="flow rv mt" style="--i:3" id="flow">
+      <button class="node on" data-info="<b>Camp.</b> Sensors d'humitat i del temps diuen quan cal regar i quan collir."><span class="bubble"><svg viewBox="0 0 24 24"><path d="M12 22V12"/><path d="M12 12c0-4 3-7 7-7 0 4-3 7-7 7z"/><path d="M12 15c0-3-2.5-5.5-6-5.5 0 3 2.5 5.5 6 5.5z"/></svg></span><b>Camp</b></button>
+      <div class="wire"></div>
+      <button class="node" data-info="<b>Planta (OT).</b> Les màquines i les cambres de fred envien dades de temperatura, producció i estat."><span class="bubble"><svg viewBox="0 0 24 24"><path d="M2 20h20V9l-6 4V9l-6 4V5H2z"/></svg></span><b>Planta (OT)</b></button>
+      <div class="wire"></div>
+      <button class="node ia" data-info="<b>Dades + IA.</b> Totes les dades es guarden juntes i la IA fa previsions i detecta problemes."><span class="bubble"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span><b>Dades + IA</b></button>
+      <div class="wire"></div>
+      <button class="node" data-info="<b>Oficina (IT).</b> Comercial i compres veuen la fruita que hi ha i les previsions per planificar."><span class="bubble"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg></span><b>Oficina (IT)</b></button>
+      <div class="wire"></div>
+      <button class="node" data-info="<b>Client.</b> El supermercat rep la comanda a temps i pot saber d'on ve cada lot."><span class="bubble"><svg viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h12L22 7H6"/></svg></span><b>Client</b></button>
+    </div>
+    <div class="info rv" style="--i:4" id="flowInfo" aria-live="polite"></div>
+    <div class="grid g4 mt">
+      <div class="card hov rv" style="--i:5"><h3>Bessó digital</h3><p>Una còpia virtual de la instal·lació per provar canvis a l'ordinador abans de fer-los.</p></div>
+      <div class="card hov rv" style="--i:6"><h3>Millora operativa</h3><p>Vendre primer la fruita que durarà menys i organitzar millor les màquines.</p></div>
+      <div class="card hov rv" style="--i:7"><h3>Traçabilitat</h3><p>Poder saber de quina finca i de quin lot ve cada caixa.</p></div>
+      <div class="card hov rv" style="--i:8"><h3>Decisions ràpides</h3><p>Les dades estan al dia i no cal esperar informes.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 1.4 -->
+<section class="slide" data-title="1.4 Sectors">
+  <div class="inner">
+    <div class="kicker rv">1.4 · RA1</div>
+    <h2 class="rv" style="--i:1">Repercussió en cada sector</h2>
+    <div class="tabs rv mt2" style="--i:2" data-tabs="sec">
+      <button class="tab on" data-t="0">Primari</button><button class="tab" data-t="1">Secundari</button><button class="tab" data-t="2">Terciari</button>
+    </div>
+    <div class="rv" style="--i:3" data-panels="sec">
+      <div class="panel on grid g2"><div class="card"><span class="tag">Què inclou</span><h3 class="mt2">Treure recursos de la natura</h3><p>Agricultura, ramaderia, pesca.</p></div><div class="card"><span class="tag">Exemple a Nufri</span><h3 class="mt2">Sensors al camp</h3><p>Sensors d'humitat al terra (OT) envien dades a un programa de gestió del camp (IT), que diu quan regar i quan collir.</p></div></div>
+      <div class="panel grid g2"><div class="card"><span class="tag">Què inclou</span><h3 class="mt2">Transformar matèries primeres</h3><p>La indústria.</p></div><div class="card"><span class="tag">Exemple a Nufri</span><h3 class="mt2">Planta connectada</h3><p>Les màquines que classifiquen la fruita i fan sucs (OT) envien dades a l'ERP (IT) per planificar els torns i el manteniment.</p></div></div>
+      <div class="panel grid g2"><div class="card"><span class="tag">Què inclou</span><h3 class="mt2">Serveis</h3><p>Comerç, transport, logística.</p></div><div class="card"><span class="tag">Exemple a Nufri</span><h3 class="mt2">Comandes i repartiment</h3><p>Les comandes dels supermercats (IT) es comparen amb la fruita que hi ha a les cambres (OT) per preparar els camions.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2.1 THD -->
+<section class="slide" data-title="2.1 Les THD" id="ra2">
+  <div class="inner">
+    <div class="kicker rv">2.1 · RA2</div>
+    <h2 class="rv" style="--i:1">Les THD</h2>
+    <p class="lead rv" style="--i:2">Les THD (tecnologies habilitadores digitals) són les tecnologies que fan possible la digitalització. Si es clica cada una, surt què és.</p>
+    <div class="chips mt rv" style="--i:3" id="chips"></div>
+    <div class="card thd-desc rv" style="--i:4" id="thdDesc" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 2.1 IA -->
+<section class="slide" data-title="2.1 La IA">
+  <div class="inner">
+    <div class="kicker rv">2.1 · RA2</div>
+    <h2 class="rv" style="--i:1">La que hem triat: la intel·ligència artificial</h2>
+    <p class="lead rv" style="--i:2">Programes que aprenen a partir de molts exemples per fer previsions o reconèixer coses, sense que els diguem pas a pas què han de fer.</p>
+    <div class="grid g3 mt">
+      <div class="card hov rv" style="--i:3"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div><h3>Aprenentatge automàtic</h3><p>Busca patrons en dades d'anys anteriors per preveure què passarà. Ex.: quanta fruita demanarà un supermercat.</p></div>
+      <div class="card hov rv" style="--i:4"><div class="ico"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div><h3>Visió artificial</h3><p>Analitza les imatges d'una càmera. Ex.: detectar pomes amb cops o taques.</p></div>
+      <div class="card hov rv" style="--i:5"><div class="ico"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h3>Xatbots</h3><p>Programes que responen preguntes escrites, com un assistent.</p></div>
+    </div>
+    <p class="small rv mt" style="--i:6"><b class="w">Límits:</b> si les dades són dolentes, s'equivoca, i per això una persona ha de revisar les decisions importants. A la UE la regula el Reglament d'IA (AI Act).</p>
+  </div>
+</section>
+
+<!-- 2.2 -->
+<section class="slide" data-title="2.2 Productes i serveis">
+  <div class="inner">
+    <div class="kicker rv">2.2 · RA2</div>
+    <h2 class="rv" style="--i:1">Nous productes i serveis</h2>
+    <div class="grid g2 mt">
+      <div class="card hov rv" style="--i:2"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div><h3>Previsió de comandes</h3><p>Calcular quanta fruita necessitarà cada supermercat. Així hi ha menys comandes d'urgència i menys fruita sobrant.</p></div>
+      <div class="card hov rv" style="--i:3"><div class="ico"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div><h3>Classificació amb càmeres</h3><p>Separar la fruita segons l'aspecte. La que només té defectes de pell es fa servir per a sucs.</p></div>
+      <div class="card hov rv" style="--i:4"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 8h18"/></svg></div><h3>Portal web per als clients</h3><p>Cada supermercat hi veu les seves comandes i d'on ve cada lot, i pot fer preguntes a un xatbot. És la part que més té a veure amb DAW.</p></div>
+      <div class="card hov rv" style="--i:5"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg></div><h3>Consells als pagesos</h3><p>Quan collir, segons les dades del temps i de les collites d'altres anys.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2.3 -->
+<section class="slide" data-title="2.3 Sostenibilitat">
+  <div class="inner">
+    <div class="kicker rv">2.3 · RA2</div>
+    <h2 class="rv" style="--i:1">Economia sostenible i eficiència energètica</h2>
+    <p class="lead rv" style="--i:2">Eficiència energètica vol dir fer la mateixa feina gastant menys energia.</p>
+    <div class="grid g2 mt" style="align-items:start">
+      <ul class="plain rv" style="--i:3">
+        <li><b class="w">Menys fruita llençada.</b> Si se sap millor què es vendrà, es guarda menys fruita que després es fa malbé.</li>
+        <li><b class="w">Menys llum a les cambres de fred.</b> Funcionen tot el dia. La IA pot ajustar la temperatura segons la fruita que hi ha i les hores en què la llum és més barata.</li>
+        <li><b class="w">Menys aigua.</b> Es rega només quan el terra ho necessita.</li>
+        <li><b class="w">Menys transport.</b> Camions més plens i rutes més curtes.</li>
+      </ul>
+      <div class="card rv" style="--i:4">
+        <h3>A tenir en compte</h3>
+        <p class="mt2">No posem percentatges d'estalvi perquè dependrien de les dades reals de l'empresa. Només es podrien saber fent una prova.</p>
+        <p class="mt2">La IA també gasta energia, sobretot quan aprèn a partir de les dades. Per això no cal fer servir models gaire grans.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2.4 -->
+<section class="slide" data-title="2.4 Nous mercats">
+  <div class="inner">
+    <div class="kicker rv">2.4 · RA2</div>
+    <h2 class="rv" style="--i:1">Nous mercats</h2>
+    <div class="grid g4 mt">
+      <div class="card hov rv" style="--i:2"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/></svg></div><h3>Serveis per a supermercats</h3><p>Oferir previsions i traçabilitat com un servei extra.</p></div>
+      <div class="card hov rv" style="--i:3"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></div><h3>Exportació</h3><p>Molts països demanen saber d'on ve la fruita. Si tot està registrat és més fàcil vendre fora.</p></div>
+      <div class="card hov rv" style="--i:4"><div class="ico"><svg viewBox="0 0 24 24"><path d="M8 2h8l-1 6h-6z"/><path d="M9 8l-2 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1L15 8"/></svg></div><h3>Productes nous</h3><p>Sucs fets amb la fruita que abans es perdia.</p></div>
+      <div class="card hov rv" style="--i:5"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8M21 21v-2a4 4 0 0 0-3-3.9"/></svg></div><h3>Feina nova</h3><p>Analistes de dades, programadors web i tècnics que connectin màquines i programes.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2.5 IT/OT -->
+<section class="slide" data-title="2.5 Implantació">
+  <div class="inner">
+    <div class="kicker rv">2.5 · RA2</div>
+    <h2 class="rv" style="--i:1">Implantació a l'oficina (IT) i a la planta (OT)</h2>
+    <div class="grid g2 mt2">
+      <div class="card rv" style="--i:2"><span class="tag">Negoci (IT)</span>
+        <ul class="plain mt2">
+          <li>Previsió de vendes connectada a l'ERP</li>
+          <li>Panell web per a la direcció amb estoc, comandes i previsions</li>
+          <li>Portal web per als clients amb xatbot</li>
+          <li>Lectura automàtica d'albarans amb OCR (programa que llegeix el text d'un document escanejat)</li>
+        </ul></div>
+      <div class="card rv" style="--i:3"><span class="tag r">Planta (OT)</span>
+        <ul class="plain mt2">
+          <li>Càmeres a les línies de classificació</li>
+          <li>Manteniment predictiu: sensors a les màquines que avisen abans que s'espatllin</li>
+          <li>Control de les cambres de fred</li>
+          <li>Sensors al camp en algunes finques</li>
+        </ul></div>
+    </div>
+    <h3 class="mt rv" style="--i:4">Com es connectaria tot</h3>
+    <div class="arch mt2">
+      <div class="card rv" style="--i:5"><b>Sensors i PLC</b><span>a les màquines</span></div>
+      <div class="card rv" style="--i:6"><b>Ordinador a la planta</b><span>recull i filtra les dades</span></div>
+      <div class="card rv" style="--i:7"><b>Plataforma</b><span>guarda les dades i hi funciona la IA</span></div>
+      <div class="card rv" style="--i:8"><b>API</b><span>connexió entre programes</span></div>
+      <div class="card rv" style="--i:9"><b>Aplicacions web</b><span>panell i portal</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2.5 fases -->
+<section class="slide" data-title="2.5 Fases">
+  <div class="inner">
+    <div class="kicker rv">2.5 · RA2</div>
+    <h2 class="rv" style="--i:1">Fases de la implantació</h2>
+    <p class="lead rv" style="--i:2">Es pot clicar cada fase.</p>
+    <div class="timeline rv mt" style="--i:3" id="tl"><div class="tl-fill" id="tlFill"></div></div>
+    <div class="card rv" style="--i:4" id="phaseInfo" aria-live="polite"></div>
+    <p class="small rv mt2" style="--i:5"><b class="w">Riscos:</b> ciberatacs a la planta (per això cal separar les xarxes), dades dolentes o incompletes i que als treballadors els costi acostumar-s'hi (es soluciona amb formació).</p>
+  </div>
+</section>
+
+<!-- 2.6 -->
+<section class="slide" data-title="2.6 Millores">
+  <div class="inner">
+    <div class="kicker rv">2.6 · RA2</div>
+    <h2 class="rv" style="--i:1">Millores en la infraestructura IT/OT</h2>
+    <button class="switch rv" style="--i:2" id="baSwitch" aria-pressed="false"><span class="sw"></span><span id="baLbl">Veure com quedaria amb la proposta</span></button>
+    <div class="ba rv" style="--i:3" id="ba"></div>
+    <p class="small rv mt2" style="--i:4">També es pot girar cada targeta per separat.</p>
+  </div>
+</section>
+
+<!-- 2.7 -->
+<section class="slide" data-title="2.7 Taula resum">
+  <div class="inner">
+    <div class="kicker rv">2.7 · RA2</div>
+    <h2 class="rv" style="--i:1">Taula resum de THD</h2>
+    <label class="rv" style="--i:2;display:block"><span class="small" style="display:block;margin-bottom:6px">Buscar a la taula</span><input class="search" id="thdSearch" placeholder="Ex.: agricultura"></label>
+    <div class="tbl-wrap rv" style="--i:3"><table class="tbl" id="thdTable"><thead><tr><th>THD</th><th>Característiques</th><th>Àrees d'aplicació</th></tr></thead><tbody></tbody></table><div class="empty" id="thdEmpty">Cap THD coincideix amb la cerca.</div></div>
+  </div>
+</section>
+
+<!-- PÒSTER -->
+<section class="slide" data-title="Pòster" id="poster">
+  <div class="inner poster-wrap">
+    <button class="poster-img rv" style="--i:1" id="posterImg" aria-label="Veure el pòster en gran"><img src="assets/poster.jpg" alt="Pòster: Intel·ligència artificial per a la fruita, proposta per a Nufri"></button>
+    <div>
+      <div class="kicker rv">Entregable 2</div>
+      <h2 class="rv" style="--i:2">Pòster</h2>
+      <p class="lead rv" style="--i:3">El cartell per presentar la proposta a l'empresa. Explica els quatre usos de la IA que proposem i que es començaria amb una prova de sis mesos.</p>
+      <div class="btns mt rv" style="--i:4">
+        <button class="btn pri" id="zoomPoster"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5M11 8v6M8 11h6"/></svg>Veure en gran</button>
+        <a class="btn" href="assets/Poster_IA.pdf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Obrir el PDF</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PITCH -->
+<section class="slide" data-title="Elevator pitch">
+  <div class="inner">
+    <div class="kicker rv">Elevator pitch · 1 minut</div>
+    <h2 class="rv" style="--i:1">Guió de l'elevator pitch</h2>
+    <div class="pitch mt2">
+      <div class="rv" style="--i:2;text-align:center">
+        <div class="ringbox">
+          <svg width="100%" height="100%" viewBox="0 0 200 200"><circle class="bgc" cx="100" cy="100" r="88"/><circle class="fg" id="ringFg" cx="100" cy="100" r="88"/></svg>
+          <div class="lbl"><div><b id="secs">60</b><small>segons</small></div></div>
+        </div>
+        <button class="btn pri mt2" id="pitchBtn"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg><span>Començar</span></button>
+      </div>
+      <div class="pitch-text rv" style="--i:3" id="pitchText">
+        <p>"Bon dia. Nosaltres hem treballat la intel·ligència artificial i us volem explicar què podria fer per a una empresa com Nufri, de Mollerussa.</p>
+        <p>Nufri cultiva fruita, la guarda en cambres de fred, en fa sucs i la ven a supermercats. Cada dia ha de decidir quanta fruita guardar, quina vendre primer o quan revisar una màquina, i moltes vegades ho fa sense tenir totes les dades.</p>
+        <p>El que proposem és connectar les màquines i els sensors de la planta amb els programes de l'oficina i fer servir la IA per fer previsions. Per exemple, saber quanta fruita demanarà un supermercat, avisar quan una màquina està a punt d'espatllar-se o ajustar les cambres de fred per gastar menys llum. Al pòster hi teniu els quatre usos que proposem.</p>
+        <p>No cal fer-ho tot de cop. La idea és començar amb una prova de sis mesos en una sola línia i, si funciona, anar-ho ampliant a la resta de l'empresa.</p>
+        <p>Gràcies."</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RECURSOS -->
+<section class="slide" data-title="Documents i fonts">
+  <div class="inner">
+    <div class="kicker rv">Final</div>
+    <h2 class="rv" style="--i:1">Documents i fonts</h2>
+    <div class="grid g2 mt2" style="align-items:start">
+      <div class="rv" style="--i:2">
+        <h3>Documents del projecte</h3>
+        <div class="grid mt2" style="gap:10px">
+          <a class="btn" href="assets/Memoria_Tecnica_IA.pdf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>Memòria tècnica (PDF)</a>
+          <a class="btn" href="assets/Poster_IA.pdf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>Pòster (PDF)</a>
+          <a class="btn" href="assets/Presentacio_IA.pptx"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 22h8M12 18v4"/></svg>Presentació (PowerPoint)</a>
+        </div>
+        <p class="small mt">Mauri, Arnau, JoseMa i Abel · CFGS DAW · Curs 2026-2027</p>
+      </div>
+      <div class="src rv" style="--i:3">
+        <h3>Fonts</h3>
+        <div class="mt2">
+          <a href="https://www.freshplaza.es/spain/article/9871335/nufri-factura-293-millones-en-2025-con-un-crecimiento-del-14/" target="_blank" rel="noopener">Nufri factura 293 milions el 2025<small>FreshPlaza, 2026</small></a>
+          <a href="https://www.mecalux.es/articulos-de-logistica/nufri-almacenaje-congelados" target="_blank" rel="noopener">Nufri, emmagatzematge de congelats<small>Mecalux</small></a>
+          <a href="https://www.alimarket.es/alimentacion/noticia/283750/nufri-seguira-otro-ano-mas-como-principal-operador-nacional-de-manzana" target="_blank" rel="noopener">Nufri, principal operador de poma<small>Alimarket, 2018</small></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="bottombar">
+  <button class="navb" id="prev" aria-label="Anterior"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+  <span class="count" id="count">1 / 19</span>
+  <div class="progress" id="progress" title="Anar a un punt de la presentació"><i id="bar"></i></div>
+  <span class="secname" id="secname"></span>
+  <button class="navb" id="next" aria-label="Següent"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+</footer>
+
+<div id="overview">
+  <div class="ov-head">
+    <h2>Totes les diapositives</h2>
+    <div class="keys"><span><kbd>←</kbd> <kbd>→</kbd> moure's</span><span><kbd>O</kbd> índex</span><span><kbd>F</kbd> pantalla completa</span><span><kbd>Esc</kbd> tancar</span></div>
+  </div>
+  <div class="ov-grid" id="ovGrid"></div>
+</div>
+<div id="lightbox"><img src="assets/poster.jpg" alt="Pòster en gran"></div>
+
+<script>
+(() => {
+  const THD = [
+    ["Intel·ligència artificial", "Programes que aprenen a partir de dades per fer previsions o reconèixer coses.", "Aprèn de dades, fa previsions, reconeix imatges i text", "Previsió de vendes, manteniment, control de qualitat, atenció al client"],
+    ["IoT (Internet de les coses)", "Aparells i sensors connectats a Internet que envien dades.", "Sensors connectats que envien dades contínuament", "Agricultura, control de màquines, logística"],
+    ["Big data", "Guardar i analitzar quantitats molt grans de dades.", "Moltes dades i de molts tipus", "Anàlisi de vendes, màrqueting"],
+    ["Núvol", "Fer servir servidors i programes d'una altra empresa a través d'Internet.", "Es paga pel que es fa servir i s'hi accedeix des de qualsevol lloc", "Programes de gestió, còpies de seguretat"],
+    ["Edge computing", "Processar les dades al mateix lloc on es generen, sense enviar-les al núvol.", "Processa les dades a prop i amb poc retard", "Control de màquines"],
+    ["Ciberseguretat", "Protegir els sistemes i les dades d'atacs.", "Prevé, detecta i respon a atacs", "Totes, sobretot les xarxes de planta"],
+    ["Robòtica col·laborativa", "Robots que poden treballar al costat de les persones.", "Robots que treballen amb persones de manera segura", "Envasat, paletitzat, magatzem"],
+    ["Impressió 3D", "Fabricar peces afegint material capa a capa.", "Peces a mida i prototips ràpids", "Recanvis, disseny de productes"],
+    ["Realitat virtual i augmentada", "Veure informació digital a sobre del món real o dins d'un món virtual.", "Mostra informació digital a sobre de la realitat", "Formació, reparacions guiades"],
+    ["Blockchain", "Registre de dades compartit que no es pot modificar un cop escrit.", "Registre segur que no es pot canviar", "Traçabilitat d'aliments, pagaments"],
+    ["5G", "Xarxa mòbil molt ràpida i amb molt poc retard.", "Molta velocitat i molt poc retard", "Fàbriques i camps connectats"],
+    ["Bessó digital", "Còpia virtual d'una instal·lació per fer proves.", "Simula una instal·lació amb dades reals", "Plantes industrials, magatzems"]
+  ];
+  const PHASES = [
+    ["Estudi inicial", "2 mesos", "Mirar quines màquines, xarxes i dades hi ha, i triar per on començar."],
+    ["Connexió IT/OT", "3 mesos", "Posar sensors, separar la xarxa de la planta de la de l'oficina i reunir les dades en un sol lloc."],
+    ["Prova pilot", "6 mesos", "Provar la IA només en una línia o una cambra (manteniment predictiu i previsió de vendes) i mesurar si funciona."],
+    ["Ampliació", "12 mesos", "Si la prova surt bé, fer-ho a la resta de centres i crear el portal web per als clients."]
+  ];
+  const BA = [
+    ["Dades repartides en molts programes i fulls de càlcul", "Totes les dades en una sola plataforma", "Tothom treballa amb la mateixa informació"],
+    ["Màquines que no es comuniquen", "Màquines connectades", "Es veu l'estat de la planta en temps real"],
+    ["Una sola xarxa per a l'oficina i la planta", "Xarxes separades amb una zona de seguretat al mig", "Si n'ataquen una, costa més arribar a l'altra"],
+    ["Les màquines s'arreglen quan s'espatllen", "Manteniment predictiu", "Menys aturades per sorpresa"],
+    ["Servidors propis a l'oficina", "Núvol i un ordinador a la planta", "Més fàcil de fer créixer, amb còpies de seguretat"],
+    ["Informes fets a mà cada setmana", "Panell web que s'actualitza sol", "Es decideix més ràpid"]
+  ];
+
+  const $ = id => document.getElementById(id);
+  const slides = [...document.querySelectorAll('.slide')];
+  const N = slides.length;
+  let cur = 0;
+  const onEnter = {};
+  const addEnter = (i, f) => (onEnter[i] = onEnter[i] || []).push(f);
+
+  function go(n, fromHash) {
+    n = Math.max(0, Math.min(N - 1, n));
+    slides.forEach((s, i) => { s.classList.toggle('active', i === n); s.classList.toggle('prev', i < n); s.setAttribute('aria-hidden', i !== n); });
+    cur = n;
+    $('bar').style.width = ((n + 1) / N * 100) + '%';
+    $('count').textContent = (n + 1) + ' / ' + N;
+    $('secname').textContent = slides[n].dataset.title || '';
+    slides[n].scrollTop = 0;
+    if (!fromHash) try { history.replaceState(null, '', '#' + (n + 1)); } catch (e) {}
+    document.querySelectorAll('.ov-item').forEach((b, i) => b.classList.toggle('cur', i === n));
+    const g = document.querySelectorAll('.bg-glow i');
+    g[0].style.transform = `translate(${-n * 1.2}vw, ${n * .5}vh)`;
+    g[1].style.transform = `translate(${n}vw, ${-n * .4}vh)`;
+    (onEnter[n] || []).forEach(f => f());
+  }
+  const next = () => go(cur + 1), prev = () => go(cur - 1);
+  $('next').onclick = next; $('prev').onclick = prev;
+  $('progress').onclick = e => { const r = e.currentTarget.getBoundingClientRect(); go(Math.floor((e.clientX - r.left) / r.width * N)); };
+
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') { if (e.key === 'Escape') e.target.blur(); return; }
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); next(); }
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); prev(); }
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(N - 1);
+    else if (e.key.toLowerCase() === 'o') toggleOv();
+    else if (e.key.toLowerCase() === 'f') toggleFs();
+    else if (e.key === 'Escape') { toggleOv(false); $('lightbox').classList.remove('on'); }
+  });
+  let tx = 0, ty = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) dx < 0 ? next() : prev();
+  });
+  window.addEventListener('hashchange', () => { const h = parseInt(location.hash.slice(1)); if (h && h - 1 !== cur) go(h - 1, true); });
+  document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(+b.dataset.go));
+  document.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => go(slides.indexOf($(b.dataset.goto))));
+
+  slides.forEach((s, i) => {
+    const b = document.createElement('button'); b.className = 'ov-item';
+    b.innerHTML = `<small>${i + 1}</small><div>${s.dataset.title}</div>`;
+    b.onclick = () => { go(i); toggleOv(false); };
+    $('ovGrid').appendChild(b);
+  });
+  function toggleOv(force) { $('overview').classList.toggle('on', force); }
+  $('btnOv').onclick = () => toggleOv();
+  $('overview').onclick = e => { if (e.target.id === 'overview') toggleOv(false); };
+  function toggleFs() {
+    try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); } catch (e) {}
+  }
+  $('btnFs').onclick = toggleFs;
+
+  slides.forEach((s, i) => {
+    const nums = s.querySelectorAll('[data-count]');
+    if (!nums.length) return;
+    addEnter(i, () => nums.forEach(el => {
+      const to = +el.dataset.count, from = +(el.dataset.from || 0), t0 = performance.now(), dur = 1200;
+      const step = t => { const p = Math.min(1, (t - t0) / dur), k = 1 - Math.pow(1 - p, 3); el.textContent = Math.round(from + (to - from) * k); if (p < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    }));
+  });
+
+  $('itot').querySelectorAll('button').forEach(b => b.onclick = () => {
+    $('itot').querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    $('cmp').className = 'cmp ' + b.dataset.v;
+  });
+
+  const nodes = $('flow').querySelectorAll('.node');
+  const setNode = n => { nodes.forEach(x => x.classList.remove('on')); n.classList.add('on'); $('flowInfo').innerHTML = n.dataset.info; };
+  nodes.forEach(n => n.onclick = () => setNode(n));
+  setNode(nodes[0]);
+
+  document.querySelectorAll('[data-tabs]').forEach(t => {
+    const panels = document.querySelector(`[data-panels="${t.dataset.tabs}"]`).children;
+    t.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+      t.querySelectorAll('.tab').forEach(x => x.classList.remove('on')); b.classList.add('on');
+      [...panels].forEach((p, i) => p.classList.toggle('on', i === +b.dataset.t));
+    });
+  });
+
+  const chips = $('chips');
+  const showThd = i => {
+    chips.querySelectorAll('.chip').forEach((c, j) => c.classList.toggle('on', i === j));
+    const [name, desc, , area] = THD[i];
+    $('thdDesc').innerHTML = `${i === 0 ? '<span class="tag">La que hem triat</span>' : ''}<h3 class="${i === 0 ? 'mt2' : ''}" style="font-size:21px">${name}</h3><p>${desc}</p><p class="mt2"><b class="w">On s'aplica:</b> ${area}</p>`;
+    $('thdDesc').animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'ease-out' });
+  };
+  THD.forEach((t, i) => {
+    const c = document.createElement('button'); c.className = 'chip' + (i === 0 ? ' ia' : ''); c.textContent = t[0];
+    c.onclick = () => showThd(i); chips.appendChild(c);
+  });
+  showThd(0);
+
+  const tl = $('tl');
+  PHASES.forEach((p, i) => {
+    const b = document.createElement('button'); b.className = 'phase';
+    b.innerHTML = `<span class="c">${i + 1}</span><b>${p[0]}</b><small>${p[1]}</small>`;
+    b.onclick = () => { clearInterval(tl._t); setPhase(i); }; tl.appendChild(b);
+  });
+  function setPhase(i) {
+    tl.querySelectorAll('.phase').forEach((p, j) => { p.classList.toggle('on', j === i); p.classList.toggle('done', j < i); });
+    $('tlFill').style.width = (i / (PHASES.length - 1) * 75) + '%';
+    const p = PHASES[i];
+    $('phaseInfo').innerHTML = `<span class="tag">Fase ${i + 1} · ${p[1]}</span><h3 class="mt2" style="font-size:21px">${p[0]}</h3><p>${p[2]}</p>`;
+  }
+  setPhase(0);
+  const tlIdx = slides.findIndex(s => s.contains(tl));
+  addEnter(tlIdx, () => {
+    setPhase(0); let k = 0; clearInterval(tl._t);
+    tl._t = setInterval(() => { if (cur !== tlIdx || ++k > 2) return clearInterval(tl._t); setPhase(k); }, 1200);
+  });
+
+  BA.forEach(([a, b, c]) => {
+    const d = document.createElement('button'); d.className = 'flip';
+    d.innerHTML = `<span class="in"><span class="f"><small>Abans</small><strong>${a}</strong></span><span class="b"><small>Amb la proposta</small><strong>${b}</strong><span>${c}</span></span></span>`;
+    d.onclick = () => d.classList.toggle('on');
+    $('ba').appendChild(d);
+  });
+  $('baSwitch').onclick = () => {
+    const on = $('baSwitch').classList.toggle('on');
+    $('baSwitch').setAttribute('aria-pressed', on);
+    $('baLbl').textContent = on ? 'Tornar a la situació d\'abans' : 'Veure com quedaria amb la proposta';
+    $('ba').querySelectorAll('.flip').forEach((f, i) => setTimeout(() => f.classList.toggle('on', on), i * 80));
+  };
+
+  const tb = $('thdTable').querySelector('tbody');
+  THD.forEach((t, i) => { const r = document.createElement('tr'); if (i === 0) r.className = 'ia'; r.innerHTML = `<td>${t[0]}</td><td>${t[2]}</td><td>${t[3]}</td>`; tb.appendChild(r); });
+  $('thdSearch').oninput = e => {
+    const q = e.target.value.toLowerCase(); let shown = 0;
+    tb.querySelectorAll('tr').forEach(r => { const ok = r.textContent.toLowerCase().includes(q); r.classList.toggle('hide', !ok); shown += ok; });
+    $('thdEmpty').style.display = shown ? 'none' : 'block';
+  };
+
+  const lb = $('lightbox');
+  $('posterImg').onclick = $('zoomPoster').onclick = () => lb.classList.add('on');
+  lb.onclick = () => lb.classList.remove('on');
+
+  const C = 2 * Math.PI * 88, fg = $('ringFg'), ps = [...$('pitchText').querySelectorAll('p')];
+  fg.style.strokeDasharray = C; fg.style.strokeDashoffset = 0;
+  const wts = ps.map(p => p.textContent.length), total = wts.reduce((a, b) => a + b, 0);
+  let timer = null, left = 60;
+  const label = t => $('pitchBtn').querySelector('span').textContent = t;
+  function resetPitch() { clearInterval(timer); timer = null; left = 60; $('secs').textContent = 60; fg.style.strokeDashoffset = 0; label('Començar'); $('pitchText').classList.remove('run'); ps.forEach(p => p.classList.remove('on')); }
+  function tick() {
+    const el = 60 - left; let acc = 0, idx = ps.length - 1;
+    for (let i = 0; i < ps.length; i++) { acc += wts[i] / total * 60; if (el < acc) { idx = i; break; } }
+    ps.forEach((p, i) => p.classList.toggle('on', i === idx));
+    $('secs').textContent = left; fg.style.strokeDashoffset = C * (1 - left / 60);
+    if (left-- <= 0) { clearInterval(timer); timer = null; label('Tornar a començar'); $('pitchText').classList.remove('run'); ps.forEach(p => p.classList.remove('on')); }
+  }
+  $('pitchBtn').onclick = () => {
+    if (timer) return resetPitch();
+    if (left < 0) resetPitch();
+    $('pitchText').classList.add('run'); label('Aturar');
+    tick(); timer = setInterval(tick, 1000);
+  };
+  addEnter(slides.findIndex(s => s.contains(ps[0])), resetPitch);
+
+  const cv = $('net'), ctx = cv.getContext('2d'); let pts = [], W, H;
+  function resize() {
+    const dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.round(Math.min(60, W * H / 26000));
+    pts = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .3, vy: (Math.random() - .5) * .3 }));
+  }
+  let mx = -999, my = -999;
+  addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const a = cur === 0 ? 1 : .35;
+    for (const p of pts) { p.x += p.vx; p.y += p.vy; if (p.x < 0 || p.x > W) p.vx *= -1; if (p.y < 0 || p.y > H) p.vy *= -1; }
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      for (let j = i + 1; j < pts.length; j++) {
+        const q = pts[j], d = Math.hypot(p.x - q.x, p.y - q.y);
+        if (d < 130) { ctx.strokeStyle = `rgba(200,230,106,${(1 - d / 130) * .3 * a})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); }
+      }
+      const dm = Math.hypot(p.x - mx, p.y - my);
+      if (dm < 160) { ctx.strokeStyle = `rgba(255,255,255,${(1 - dm / 160) * .35 * a})`; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(mx, my); ctx.stroke(); }
+      ctx.fillStyle = `rgba(230,240,210,${.6 * a})`; ctx.beginPath(); ctx.arc(p.x, p.y, 1.7, 0, Math.PI * 2); ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  addEventListener('resize', resize); resize();
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) draw();
+
+  const h = parseInt(location.hash.slice(1));
+  go(h ? h - 1 : 0, true);
+})();
+</script>
+</body>
+</html>
